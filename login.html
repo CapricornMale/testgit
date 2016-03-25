@@ -1,0 +1,206 @@
+<!DOCTYPE HTML>
+<html manifest="CACHE.manifest">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <meta content="width=640, target-densitydpi=320, user-scalable=no" name="viewport" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta content="telephone=no" name="format-detection" />
+    <link rel="stylesheet" type="text/css" href="inc/base.css">
+    <link rel="stylesheet" type="text/css" href="inc/public.css">
+</head>
+
+<body>
+<div id="warp">
+    <section id="content">
+        <div class="reg-login-content">
+            <fieldset>
+                <div class="reg-form login-form">
+                    <ul>
+                        <li>
+                            <label class="label-name"></label>
+                            <div class="form-ipt-content">
+                                <input type="text" id="username" placeholder="输入注册手机号" class="ipt-focus ipt-um" autocapitalize="off" value="" />
+                                <div class="ipt-clear-btn"><span></span></div>
+                                <div id="umCheckResult" class="ipt-check-icon fn-hide"><span></span></div>
+                            </div>
+                        </li>
+                        <li>
+                            <label class="label-password clear-bottom-line"></label>
+                            <div class="form-ipt-content">
+                                <input type="password" id="password" placeholder="输入密码" class="ipt-focus ipt-password"
+                                       autocapitalize="off" value="" />
+                                <div class="ipt-clear-btn"><span></span></div>
+                            </div>
+                            <div class="form-ipt-operate">
+                                <div class="ipt-show-password" id="J_ShowPassword"><span></span></div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                <div class="form-btn">
+                    <span class="form-btn-css" id="login">登录</span>
+                </div>
+                <div class="fn-clear">
+                    <span class="pwd-what" id="forget">忘记密码？</span>
+                </div>
+            </fieldset>
+        </div>
+    </section>
+</div>
+
+<script type="text/javascript" src="js/zepto.min.js"></script>
+<script type="text/javascript" src="js/zepto-touch.js"></script>
+<script type="text/javascript" src="js/adapter.js"></script>
+<script type="text/javascript" src="js/app.js"></script>
+<script type="text/javascript" src="js/common.js"></script>
+<script type="text/javascript">
+    // 设置头部
+    APP.headerShow(fCloud.TITLE.LOGIN, '', '', '', 'TEXT', '注册', function() {
+        APP.redirect('reg.html', fCloud.TITLE.REGISTER);
+    });
+    var usernameEl = $('#username'), //
+        passwordEl = $('#password'),
+        umCheckResult = $('#umCheckResult'),
+        MOBILE_REGEX = /^1\d{10}$/,
+        rightClass = 'ipt-right-icon',
+        PWD_REGEX = /^(?=.*[0-9].*)(?=.*[a-zA-Z].*).{8,16}$/;
+
+    // 读取上次登录的用户名
+    var LAST_USERNAME = fCloud.data('LAST_USERNAME');
+    if(LAST_USERNAME) {
+        usernameEl.val(LAST_USERNAME);
+    }
+    //清除
+    $('.ipt-clear-btn').on('tap', function(){
+        var checkImage = $(this).siblings('.ipt-check-icon');
+        checkImage.hide();
+        $(this).siblings('input').val('');
+        return false;
+    });
+    //显示清除按钮
+    $('input').focus(function(){
+        var checkImage = $(this).siblings('.ipt-check-icon');
+        checkImage.hide();
+        var clearBtn = $(this).siblings('.ipt-clear-btn');
+        clearBtn.show();
+        return false;
+    });
+    // 前台校验手机格式（只能输入数字）
+    usernameEl.unbind().bind('keyup',function(){
+        var p = usernameEl.val();
+        if(/[^\d.]/.test(p)) {
+            p = p.replace(/[^\d.]/g, '');
+            usernameEl.val(p);
+        }
+    });
+    //前台校验用户名
+    usernameEl.blur(function(){
+        var clearBtn = $(this).siblings('.ipt-clear-btn');
+        clearBtn.hide();
+        var userName = usernameEl.val();
+        if(!userName){
+            umCheckResult.hide();
+        }else if(!MOBILE_REGEX.test(userName)){
+            umCheckResult.removeClass(rightClass).show();
+        }else{
+            umCheckResult.addClass(rightClass).show();
+        }
+    });
+    //前台校验密码
+    passwordEl.blur(function(){
+        var clearBtn = $(this).siblings('.ipt-clear-btn');
+        clearBtn.hide();
+    });
+    //显示密码
+    $('#J_ShowPassword').tap(function(){
+        var pwdOnCls = 'ipt-show-password-on';
+        if('password' === passwordEl.attr('type')){
+            passwordEl.attr('type', 'text');
+            $(this).addClass(pwdOnCls);
+        }else{
+            passwordEl.attr('type', 'password');
+            $(this).removeClass(pwdOnCls);
+        }
+    });
+    //登录提交
+    $('#login').on('touchstart', function() {
+        var username = usernameEl.val(), //
+            password = passwordEl.val();
+        if (!username) {
+            alert('请输入注册手机号');
+        } else if (!MOBILE_REGEX.test(username)){
+            alert('注册手机号格式错误');
+        } else if (!password) {
+            alert('请输入密码');
+        }else {
+            $.ajax({
+                url : fCloud.Service.exit,
+                type : 'GET',
+                dataType : 'json',
+                success : function() {
+                    $.ajax({
+                        url : fCloud.Service.jSecurityCheck,
+                        data : {
+                            j_username : username,
+                            j_password : password
+                        },
+                        type : 'POST',
+                        dataType : 'json',
+                        error : function(xhr) {
+                            // 非开发环境
+                            if (xhr.status == '403') {
+                                var response = eval('(' + xhr.responseText + ')');
+                                alert(response.msg);
+                                return;
+                            }
+
+                            // 开发环境
+                            var response = xhr.responseText;
+                            try {
+                                response = eval('(' + response + ')');
+                            } catch(e) {
+                                response = {
+                                    msg : '登录失败，请重新输入。'
+                                };
+                            }
+
+                            $.get('/fcs/do/common/json/Login', function(response) {
+                                putLastUsername(username);
+                                APP.setUser(username, response.data);
+                                APP.toIndex(1);
+                            }, 'json');
+                        },
+                        success : function(response) {
+                            if (response.code != 1) {
+                                alert(response.msg);
+                            } else{
+                                putLastUsername(username);
+                                APP.setUser(username, response.data);
+                                APP.toIndex(1);
+                            }
+                        }
+                    });
+                },
+                error: function() {
+                    alert('连接失败，请检查您的网络');
+                }
+            });
+        }
+    });
+
+    $('#forget').bind('tap', function() {
+        APP.redirect('forget.html', fCloud.TITLE.FORGET);
+    });
+
+    /**
+     * 记录最后一次登录用户名
+     */
+    function putLastUsername(username) {
+        fCloud.data('LAST_USERNAME', username);
+    }
+
+</script>
+</body>
+</html>
