@@ -5,4 +5,6 @@
 Creating a new branch is quick
 Creating too
 xxxxxxxxxxxxxxxxxx
-Creating a new branch is quick & simple.
+qqqqqqq
+Creating a new branch is quick and simple.
+
